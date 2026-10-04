@@ -136,9 +136,10 @@
             padding: 30px 0;
         }
 
+        /* Cards are duplicated by JS; -50% then equals exactly one set for a seamless loop.
+           Duration is set by JS from the track width so both sliders move at the same speed. */
         .team-track {
             display: flex;
-            gap: 30px;
             width: max-content;
             animation: scroll-left 40s linear infinite;
         }
@@ -147,7 +148,12 @@
             animation: none !important;
         }
 
+        .team-track.manual-control.sliding {
+            transition: transform 0.4s ease;
+        }
+
         .team-card {
+            margin-right: 30px;
             min-width: 260px;
             background: #333132;
             border-radius: 16px;
@@ -243,6 +249,13 @@
 
         #hero {
             background-color: #000;
+            /* Grow with content on short screens instead of clipping under the fixed header/tickers */
+            height: auto;
+            min-height: calc(100vh - var(--header-height));
+            padding-top: 80px;
+            /* clears the top ticker + logo animation overshoot */
+            padding-bottom: 70px;
+            /* clears the fixed bottom ticker */
         }
 
         #tracks {
@@ -251,9 +264,9 @@
 
         #projects {
             background-color: #000;
-            height: 100vh;
+            height: auto;
             overflow: hidden;
-            padding: 0;
+            padding: 60px 0;
             display: flex;
             align-items: center;
         }
@@ -266,7 +279,6 @@
             justify-content: center;
             max-width: 800px;
             margin: 0 auto;
-            margin-top: -120px;
             margin-left: calc(50%);
             transform: translateX(-50%);
         }
@@ -475,10 +487,11 @@
             overflow: hidden;
         }
 
+        /* Slides are duplicated by JS; -50% then equals exactly one set for a seamless loop */
         .projects-container {
             display: flex;
-            gap: 30px;
             width: max-content;
+            align-self: flex-start;
 
             animation: media-scroll 80s linear infinite;
         }
@@ -490,6 +503,7 @@
         /* Each media card */
         .project-slide {
             flex-shrink: 0;
+            margin-right: 30px;
             width: 320px;
             height: 240px;
             position: relative;
@@ -940,8 +954,12 @@
                 font-size: 3em;
             }
 
+            /* Top ticker is hidden on mobile, so less top clearance is needed */
+            #hero {
+                padding-top: 40px;
+            }
+
             .hero-image {
-                padding-top: 80px;
                 padding-bottom: 40px;
             }
 
@@ -972,9 +990,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
         rel="stylesheet">
 
-    <!-- GSAP & ScrollTrigger CDN -->
+    <!-- GSAP CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
 </head>
 
@@ -1060,14 +1077,14 @@
         <div class="ticker-wrap" id="ticker-wrap">
             <div class="ticker">
                 <span>24 Hour Hackathon • </span>
-                <span>Price Pool: ₹ 2,50,000 • </span>
+                <span>Prize Pool: ₹ 2,50,000 • </span>
                 <span>National Level Event • </span>
                 <span>Industry Expert Mentors • </span>
                 <span>Exciting Domains & Tracks • </span>
                 <span>Networking Opportunities • </span>
                 <!-- Duplicate spans for seamless loop -->
                 <span>24 Hour Hackathon • </span>
-                <span>Price Pool: ₹ 2,50,000 • </span>
+                <span>Prize Pool: ₹ 2,50,000 • </span>
                 <span>National Level Event • </span>
                 <span>Industry Expert Mentors • </span>
                 <span>Exciting Domains & Tracks • </span>
@@ -1225,7 +1242,6 @@
                 </div>
 
             </div>
-        </div>
         </div>
     </section><!-- End About Section -->
     <!-- ABOUT PART END -->
@@ -2446,40 +2462,10 @@
     </section><!-- End About Section -->
 
 
-    <!-- Media & Highlights Section (Horizontal Scroll) -->
+    <!-- Media & Highlights Section (Infinite Auto-Scroll) -->
     <section id="projects" class="section">
         <h2>Media & Highlights</h2>
         <div class="projects-container">
-
-            <div class="project-slide">
-                <img src="media/1.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Organizing Committee</div>
-            </div>
-
-            <div class="project-slide">
-                <img src="media/2.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Technical Workshop of HackSavvy-25</div>
-            </div>
-
-            <div class="project-slide">
-                <img src="media/3.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Inaugural Function of Hacksavvy-25</div>
-            </div>
-
-            <div class="project-slide">
-                <img src="media/4.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Award Ceremony</div>
-            </div>
-
-            <div class="project-slide">
-                <img src="media/5.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Lamp Lighting Ceremony</div>
-            </div>
-
-            <div class="project-slide">
-                <img src="media/6.jpg" alt="Media from hacksavvy-25">
-                <div class="project-overlay">Award Ceremony</div>
-            </div>
 
             <div class="project-slide">
                 <img src="media/1.jpg" alt="Media from hacksavvy-25">
@@ -2551,7 +2537,6 @@
     </section><!-- End Contact Section -->
 
 
-    </div>
     <footer>
         HackSavvy-26 <br> Organized by MGIT, Hyderabad <br> Developed by Kriti Karunam
     </footer>
@@ -2566,55 +2551,72 @@
         }
         document.addEventListener("DOMContentLoaded", function () {
 
-            const track = document.querySelector('.team-track');
-            const prevBtn = document.querySelector('.nav-btn.prev');
-            const nextBtn = document.querySelector('.nav-btn.next');
+            // Team sliders (faculty + student): seamless auto-scroll with prev/next controls
+            const SCROLL_SPEED = 50; // px per second
+            const RESUME_DELAY = 5000; // ms before auto-scroll resumes after a click
 
-            let currentOffset = 0;
-            const slideAmount = 290; // card width (260) + gap (30)
-            let resumeTimer = null;
+            document.querySelectorAll('.team-slider-wrapper').forEach(function (wrapper) {
+                const track = wrapper.querySelector('.team-track');
+                const prevBtn = wrapper.querySelector('.nav-btn.prev');
+                const nextBtn = wrapper.querySelector('.nav-btn.next');
+                let resumeTimer = null;
 
-            function stopAnimation() {
-                track.classList.add('manual-control');
-                track.style.transform = `translateX(${currentOffset}px)`;
+                // Duplicate the cards so the -50% keyframe loops without a jump
+                Array.from(track.children).forEach(function (card) {
+                    const clone = card.cloneNode(true);
+                    clone.setAttribute('aria-hidden', 'true');
+                    clone.querySelectorAll('a').forEach(function (a) { a.tabIndex = -1; });
+                    track.appendChild(clone);
+                });
 
-                // Clear existing timer
-                if (resumeTimer) {
-                    clearTimeout(resumeTimer);
+                const setWidth = () => track.scrollWidth / 2; // width of one full set of cards
+                const duration = () => setWidth() / SCROLL_SPEED; // seconds per loop
+                const slideAmount = () => {
+                    const card = track.querySelector('.team-card');
+                    return card.offsetWidth + parseFloat(getComputedStyle(card).marginRight);
+                };
+                const currentOffset = () => new DOMMatrixReadOnly(getComputedStyle(track).transform).m41;
+
+                function setDuration() {
+                    track.style.animationDuration = duration() + 's';
                 }
-            }
 
-            function scheduleResume() {
-                resumeTimer = setTimeout(() => {
-                    track.classList.remove('manual-control');
+                function slide(direction) {
+                    // Freeze at the current on-screen position (works mid-animation and mid-transition)
+                    let offset = currentOffset();
+                    clearTimeout(resumeTimer);
+                    track.classList.remove('sliding');
+                    track.classList.add('manual-control');
+
+                    // Wrap around by one set width so the slider is endlessly navigable
+                    const width = setWidth();
+                    let target = offset + direction * slideAmount();
+                    if (target > 0) { offset -= width; target -= width; }
+                    else if (target <= -width) { offset += width; target += width; }
+
+                    track.style.transform = `translateX(${offset}px)`;
+                    void track.offsetWidth; // apply the jump instantly before animating
+                    track.classList.add('sliding');
+                    track.style.transform = `translateX(${target}px)`;
+
+                    resumeTimer = setTimeout(resume, RESUME_DELAY);
+                }
+
+                function resume() {
+                    // Restart the loop from the current position instead of snapping back to the start
+                    const progress = -currentOffset() / setWidth();
+                    track.style.animationDelay = -(progress * duration()) + 's';
+                    track.classList.remove('sliding', 'manual-control');
                     track.style.transform = '';
-                    currentOffset = 0;
-                }, 5000);
-            }
+                }
 
-            prevBtn.addEventListener('click', function () {
-                stopAnimation();
-                currentOffset += slideAmount;
+                prevBtn.addEventListener('click', () => slide(1));
+                nextBtn.addEventListener('click', () => slide(-1));
 
-                // Allow going back a reasonable amount
-                const maxRight = slideAmount * 3;
-                if (currentOffset > maxRight) currentOffset = maxRight;
-
-                track.style.transform = `translateX(${currentOffset}px)`;
-                scheduleResume();
+                setDuration();
+                window.addEventListener('resize', setDuration);
             });
 
-            nextBtn.addEventListener('click', function () {
-                stopAnimation();
-                currentOffset -= slideAmount;
-
-                // Prevent going too far
-                const maxLeft = -(track.scrollWidth / 2);
-                if (currentOffset < maxLeft) currentOffset = maxLeft;
-
-                track.style.transform = `translateX(${currentOffset}px)`;
-                scheduleResume();
-            });
             // Hero Section Animations
             gsap.fromTo(".hero-title", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1, delay: 0.5 });
             gsap.fromTo(".hero-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1, delay: 1 });
@@ -2633,19 +2635,12 @@
                 }
             });
 
-            //Horizontal scrolling
-            gsap.registerPlugin(ScrollTrigger);
-
-            gsap.to(".projects-container", {
-                xPercent: -100 * (document.querySelectorAll(".project-slide").length - 1),
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "#projects",
-                    pin: true,
-                    scrub: 1,
-                    snap: 1 / (document.querySelectorAll(".project-slide").length - 1),
-                    end: () => "+=" + document.querySelector(".projects-container").offsetWidth
-                }
+            // Media & Highlights: duplicate the slides so the CSS -50% loop is seamless
+            const mediaTrack = document.querySelector(".projects-container");
+            Array.from(mediaTrack.children).forEach(function (slide) {
+                const clone = slide.cloneNode(true);
+                clone.setAttribute('aria-hidden', 'true');
+                mediaTrack.appendChild(clone);
             });
 
             // Ticker animation: slower start, then even slower

@@ -1,0 +1,33 @@
+# Personal notes (not for the repo)
+deployment_steps.md
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Deployment platform artifacts
+.vercel/
+.netlify/
+
+# Dependencies & build output (if tooling is ever added)
+node_modules/
+dist/
+build/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
